@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useRef, useState } from "react";
-import { decodeXuanwu, xuanwufy } from "./cipher";
+import { decodeXuanwu, visibleXuanwuLength, xuanwufy } from "./cipher";
 
 type Notice = { text: string; kind: "ok" | "error" } | null;
 
@@ -18,7 +18,7 @@ export default function Home() {
   }, []);
 
   const stats = useMemo(
-    () => ({ plain: Array.from(plainText).length, xuanwu: Array.from(xuanwuText).length }),
+    () => ({ plain: Array.from(plainText).length, xuanwu: visibleXuanwuLength(xuanwuText) }),
     [plainText, xuanwuText],
   );
 
@@ -106,9 +106,14 @@ export default function Home() {
           />
           <div className="panel-footer">
             <span>支持中英文、Emoji、换行与特殊符号</span>
-            <button className="primary-action" type="button" onClick={handleEncode}>
-              开始玄武化 <span aria-hidden="true">→</span>
-            </button>
+            <div className="plain-actions">
+              <button className="clear-text-action" type="button" onClick={handleClear}>
+                <span aria-hidden="true">↺</span> 清空文本
+              </button>
+              <button className="primary-action" type="button" onClick={handleEncode}>
+                开始玄武化 <span aria-hidden="true">→</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -148,7 +153,7 @@ export default function Home() {
         <h2>三步，开始遥遥领先</h2>
         <div className="steps-grid">
           <article><span>1</span><h3>输入原文</h3><p>粘贴任意文本，中英文和 Emoji 都没问题。</p></article>
-          <article><span>2</span><h3>一键玄武化</h3><p>生成带有随机停顿与口语感的玄武语。</p></article>
+          <article><span>2</span><h3>一键玄武化</h3><p>生成一句简短、随机又有口语感的玄武语。</p></article>
           <article><span>3</span><h3>复制或解码</h3><p>分享玄武语，再粘贴回来完整恢复原文。</p></article>
         </div>
       </section>

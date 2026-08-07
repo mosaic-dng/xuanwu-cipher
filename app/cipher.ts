@@ -1,6 +1,8 @@
 const TOKENS = ["啊", "这个", "我们", "是吧"] as const;
-const MAGIC = [0x58, 0x57, 0x43, 0x31]; // XWC1
+const LEGACY_MAGIC = [0x58, 0x57, 0x43, 0x31]; // XWC1
+const MAGIC = [0x58, 0x57, 0x56, 0x32]; // XWV2
 const MAX_INPUT_BYTES = 250_000;
+const WORD_JOINER = "\u2060";
 
 function crc32(bytes: Uint8Array) {
   let crc = 0xffffffff;
@@ -36,6 +38,32 @@ function pick<T>(items: readonly T[]) {
   return items[Math.floor(Math.random() * items.length)];
 }
 
+function byteToVariationSelector(byte: number) {
+  return String.fromCodePoint(byte < 16 ? 0xfe00 + byte : 0xe0100 + byte - 16);
+}
+
+function variationSelectorsToBytes(input: string) {
+  const bytes: number[] = [];
+  for (const character of input) {
+    const codePoint = character.codePointAt(0)!;
+    if (codePoint >= 0xfe00 && codePoint <= 0xfe0f) {
+      bytes.push(codePoint - 0xfe00);
+    } else if (codePoint >= 0xe0100 && codePoint <= 0xe01ef) {
+      bytes.push(codePoint - 0xe0100 + 16);
+    }
+  }
+  return bytes;
+}
+
+export function visibleXuanwuLength(input: string) {
+  return Array.from(input).filter((character) => {
+    const codePoint = character.codePointAt(0)!;
+    return codePoint !== 0x2060 &&
+      !(codePoint >= 0xfe00 && codePoint <= 0xfe0f) &&
+      !(codePoint >= 0xe0100 && codePoint <= 0xe01ef);
+  }).length;
+}
+
 export function xuanwufy(input: string) {
   const payload = new TextEncoder().encode(input);
   if (payload.length > MAX_INPUT_BYTES) {
@@ -44,45 +72,38 @@ export function xuanwufy(input: string) {
 
   const packet = new Uint8Array([
     ...MAGIC,
-    ...numberToBytes(payload.length),
     ...payload,
     ...numberToBytes(crc32(payload)),
   ]);
-  const encoded: string[] = [];
+  const carriers = [
+    "啊这个……我们这个，是吧。遥遥领先。",
+    "这个这个，我们啊……是吧，遥遥领先。",
+    "啊这个，我们是吧……遥遥领先。",
+    "我们这个……啊，是吧。遥遥领先。",
+    "啊，这个我们这个……是吧。遥遥领先。",
+  ] as const;
 
-  for (const byte of packet) {
-    encoded.push(
-      TOKENS[(byte >>> 6) & 3],
-      TOKENS[(byte >>> 4) & 3],
-      TOKENS[(byte >>> 2) & 3],
-      TOKENS[byte & 3],
-    );
-  }
-
-  const joins = ["", "、", "，", " ", "……"] as const;
-  const pauses = ["。", "，", "……", "，……", "、……"] as const;
-  const out: string[] = [];
-  const phraseSize = () => 5 + Math.floor(Math.random() * 7);
-  let nextPause = phraseSize();
-
-  encoded.forEach((token, index) => {
-    out.push(token);
-    if (index === encoded.length - 1) return;
-
-    if (index + 1 === nextPause) {
-      if (Math.random() < 0.36) out.push("，遥遥领先");
-      out.push(pick(pauses));
-      nextPause += phraseSize();
-    } else {
-      out.push(pick(joins));
-      if (Math.random() < 0.025) out.push("遥遥领先，");
-    }
-  });
-
-  return out.join("") + pick(["。", "……。", "，遥遥领先。"]);
+  return pick(carriers) + WORD_JOINER + Array.from(packet, byteToVariationSelector).join("");
 }
 
-export function decodeXuanwu(input: string) {
+function decodeCompact(bytes: number[]) {
+  if (bytes.length < 8 || !MAGIC.every((byte, i) => bytes[i] === byte)) {
+    throw new Error("啊这个……这个好像不太对，是吧。");
+  }
+
+  const payload = new Uint8Array(bytes.slice(4, -4));
+  if (payload.length > MAX_INPUT_BYTES || crc32(payload) !== bytesToNumber(bytes, bytes.length - 4)) {
+    throw new Error("这段玄武语不完整，可能在复制时丢失了内容。");
+  }
+
+  try {
+    return new TextDecoder("utf-8", { fatal: true }).decode(payload);
+  } catch {
+    throw new Error("这段玄武语不完整，可能在复制时丢失了内容。");
+  }
+}
+
+function decodeLegacy(input: string) {
   const matches = input.match(/这个|我们|是吧|啊/g) ?? [];
   if (matches.length < 48 || matches.length % 4 !== 0) {
     throw new Error("啊这个……这个好像不太对，是吧。");
@@ -99,7 +120,7 @@ export function decodeXuanwu(input: string) {
     );
   }
 
-  if (!MAGIC.every((byte, i) => bytes[i] === byte)) {
+  if (!LEGACY_MAGIC.every((byte, i) => bytes[i] === byte)) {
     throw new Error("啊这个……这个好像不太对，是吧。");
   }
 
@@ -115,4 +136,9 @@ export function decodeXuanwu(input: string) {
   }
 
   return new TextDecoder("utf-8", { fatal: true }).decode(payload);
+}
+
+export function decodeXuanwu(input: string) {
+  const compactBytes = variationSelectorsToBytes(input);
+  return compactBytes.length > 0 ? decodeCompact(compactBytes) : decodeLegacy(input);
 }

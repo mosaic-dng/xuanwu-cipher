@@ -194,7 +194,7 @@ export default function Home() {
 
       <footer>
         <div className="footer-brand"><span className="brand-mark small">玄</span><strong>玄武加密</strong><em>JUST FOR FUN</em></div>
-        <p>本项目为网络文化娱乐创作，与华为技术有限公司及其关联公司无关，也不代表任何品牌官方立场。<br />玄武加密主要用于娱乐和文本转换，并非真正的密码学加密，请勿将其理解为官方产品或官方功能。</p>
+        <p>本项目为网络文化娱乐创作，与华为技术有限公司及其关联公司无关，也不代表任何品牌官方立场。</p>
         <span className="footer-note">啊这个……好玩就行。</span>
       </footer>
 

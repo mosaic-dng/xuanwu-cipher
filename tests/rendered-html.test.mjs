@@ -26,6 +26,7 @@ test("server renders the Xuanwu Cipher product", async () => {
   assert.match(html, /玄武解码/);
   assert.match(html, /口音浓度/);
   assert.match(html, /本地处理/);
+  assert.doesNotMatch(html, /并非真正的密码学加密/);
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape|react-loading-skeleton/i);
 });
 

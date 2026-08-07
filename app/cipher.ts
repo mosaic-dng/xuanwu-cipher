@@ -4,6 +4,48 @@ const MAGIC = [0x58, 0x57, 0x56, 0x32]; // XWV2
 const MAX_INPUT_BYTES = 250_000;
 const WORD_JOINER = "\u2060";
 
+export type XuanwuTone = "brief" | "standard" | "verbose";
+
+export interface XuanwuOptions {
+  tone?: XuanwuTone;
+}
+
+const OPENINGS: Record<XuanwuTone, readonly string[]> = {
+  brief: [
+    "啊这个……",
+    "这个这个，",
+    "啊，是吧……",
+    "这个，我们……",
+  ],
+  standard: [
+    "啊啊这个这个，我们这个啊……",
+    "啊这个这个这个，我们这个啊，",
+    "这个这个，啊这个我们……",
+    "啊这个这个，是吧啊，",
+    "啊啊这个，这个我们这个……",
+    "这个这个这个，啊，我们这个……",
+    "啊这个啊，这个这个，我们……",
+  ],
+  verbose: [
+    "啊啊这个这个这个，我们这个啊，啊这个这个是吧啊……",
+    "啊这个这个这个我们这个啊，啊啊这个这个，是吧啊……",
+    "这个这个这个，我们这个啊，啊这个这个啊啊这个……",
+  ],
+};
+
+const ENDINGS = [
+  "遥遥领先同行，是吧？",
+  "领先很多。",
+  "我们继续领先。",
+  "远远遥遥领先于同行。",
+  "遥遥领先的啊。",
+  "领先同行超过 50%。",
+  "绝对是遥遥领先的。",
+  "遥遥领航领先于同行。",
+  "超越啊全球所有的同行。",
+  "我们是遥遥领先同行的。",
+] as const;
+
 function crc32(bytes: Uint8Array) {
   let crc = 0xffffffff;
   for (const byte of bytes) {
@@ -64,7 +106,11 @@ export function visibleXuanwuLength(input: string) {
   }).length;
 }
 
-export function xuanwufy(input: string) {
+function generateCarrier(tone: XuanwuTone) {
+  return pick(OPENINGS[tone]) + pick(ENDINGS);
+}
+
+export function xuanwufy(input: string, options: XuanwuOptions = {}) {
   const payload = new TextEncoder().encode(input);
   if (payload.length > MAX_INPUT_BYTES) {
     throw new Error("文本太长了，请分段转换。");
@@ -75,29 +121,7 @@ export function xuanwufy(input: string) {
     ...payload,
     ...numberToBytes(crc32(payload)),
   ]);
-  const openings = [
-    "啊啊这个这个，我们这个啊……",
-    "啊这个这个这个，我们这个啊，",
-    "这个这个，啊这个我们……",
-    "啊这个这个，是吧啊，",
-    "啊啊这个，这个我们这个……",
-    "这个这个这个，啊，我们这个……",
-    "啊这个啊，这个这个，我们……",
-  ] as const;
-  const endings = [
-    "遥遥领先同行，是吧？",
-    "领先很多。",
-    "我们继续领先。",
-    "远远遥遥领先于同行。",
-    "遥遥领先的啊。",
-    "领先同行超过 50%。",
-    "绝对是遥遥领先的。",
-    "遥遥领航领先于同行。",
-    "超越啊全球所有的同行。",
-    "我们是遥遥领先同行的。",
-  ] as const;
-
-  return pick(openings) + pick(endings) + WORD_JOINER + Array.from(packet, byteToVariationSelector).join("");
+  return generateCarrier(options.tone ?? "standard") + WORD_JOINER + Array.from(packet, byteToVariationSelector).join("");
 }
 
 function decodeCompact(bytes: number[]) {
@@ -155,4 +179,14 @@ function decodeLegacy(input: string) {
 export function decodeXuanwu(input: string) {
   const compactBytes = variationSelectorsToBytes(input);
   return compactBytes.length > 0 ? decodeCompact(compactBytes) : decodeLegacy(input);
+}
+
+export function isXuanwu(input: string) {
+  if (!input) return false;
+  try {
+    decodeXuanwu(input);
+    return true;
+  } catch {
+    return false;
+  }
 }

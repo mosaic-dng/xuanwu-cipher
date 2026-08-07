@@ -1,13 +1,20 @@
 "use client";
 
 import { useCallback, useMemo, useRef, useState } from "react";
-import { decodeXuanwu, visibleXuanwuLength, xuanwufy } from "./cipher";
+import {
+  decodeXuanwu,
+  isXuanwu,
+  visibleXuanwuLength,
+  xuanwufy,
+  type XuanwuTone,
+} from "./cipher";
 
 type Notice = { text: string; kind: "ok" | "error" } | null;
 
 export default function Home() {
   const [plainText, setPlainText] = useState("");
   const [xuanwuText, setXuanwuText] = useState("");
+  const [tone, setTone] = useState<XuanwuTone>("standard");
   const [notice, setNotice] = useState<Notice>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -21,6 +28,7 @@ export default function Home() {
     () => ({ plain: Array.from(plainText).length, xuanwu: visibleXuanwuLength(xuanwuText) }),
     [plainText, xuanwuText],
   );
+  const recognized = useMemo(() => isXuanwu(xuanwuText), [xuanwuText]);
 
   const handleEncode = () => {
     if (!plainText) {
@@ -28,7 +36,7 @@ export default function Home() {
       return;
     }
     try {
-      setXuanwuText(xuanwufy(plainText));
+      setXuanwuText(xuanwufy(plainText, { tone }));
       showNotice("这个……已经遥遥领先了。");
     } catch (error) {
       showNotice(error instanceof Error ? error.message : "转换失败了。", "error");
@@ -104,8 +112,27 @@ export default function Home() {
             aria-label="原文"
             spellCheck={false}
           />
-          <div className="panel-footer">
-            <span>支持中英文、Emoji、换行与特殊符号</span>
+          <div className="panel-footer plain-footer">
+            <div className="tone-control" role="group" aria-label="口音浓度">
+              <span>口音浓度</span>
+              <div className="tone-options">
+                {([
+                  ["brief", "精简"],
+                  ["standard", "标准"],
+                  ["verbose", "唠叨"],
+                ] as const).map(([value, label]) => (
+                  <button
+                    className={`tone-option ${tone === value ? "active" : ""}`}
+                    type="button"
+                    aria-pressed={tone === value}
+                    onClick={() => setTone(value)}
+                    key={value}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
             <div className="plain-actions">
               <button className="clear-text-action" type="button" onClick={handleClear}>
                 <span aria-hidden="true">↺</span> 清空文本
@@ -122,7 +149,14 @@ export default function Home() {
         <div className="panel cipher-panel">
           <div className="panel-heading">
             <div><span className="step">02</span><h2>玄武语</h2></div>
-            <span className="count">{stats.xuanwu.toLocaleString()} 字</span>
+            <div className="cipher-heading-meta">
+              {xuanwuText && (
+                <span className={`decode-status ${recognized ? "valid" : "invalid"}`}>
+                  {recognized ? "可解码" : "未识别"}
+                </span>
+              )}
+              <span className="count">{stats.xuanwu.toLocaleString()} 字</span>
+            </div>
           </div>
           <textarea
             value={xuanwuText}

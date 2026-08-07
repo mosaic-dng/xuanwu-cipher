@@ -75,22 +75,29 @@ export function xuanwufy(input: string) {
     ...payload,
     ...numberToBytes(crc32(payload)),
   ]);
-  const carriers = [
-    "啊这个……遥遥领先同行，是吧？",
-    "这个，我们领先很多。",
-    "啊，我们继续领先，是吧。",
-    "这个这个……远远遥遥领先于同行。",
-    "啊这个，遥遥领先的啊。",
-    "我们这个……领先同行超过 50%，是吧？",
-    "啊，绝对是遥遥领先的。",
-    "这个……遥遥领航领先于同行。",
-    "啊这个，我们超越啊全球所有的同行。",
-    "这个……我们是遥遥领先同行的。",
-    "啊这个，领先很多，遥遥领先，是吧？",
-    "我们这个……绝对是遥遥领先的啊。",
+  const openings = [
+    "啊啊这个这个，我们这个啊……",
+    "啊这个这个这个，我们这个啊，",
+    "这个这个，啊这个我们……",
+    "啊这个这个，是吧啊，",
+    "啊啊这个，这个我们这个……",
+    "这个这个这个，啊，我们这个……",
+    "啊这个啊，这个这个，我们……",
+  ] as const;
+  const endings = [
+    "遥遥领先同行，是吧？",
+    "领先很多。",
+    "我们继续领先。",
+    "远远遥遥领先于同行。",
+    "遥遥领先的啊。",
+    "领先同行超过 50%。",
+    "绝对是遥遥领先的。",
+    "遥遥领航领先于同行。",
+    "超越啊全球所有的同行。",
+    "我们是遥遥领先同行的。",
   ] as const;
 
-  return pick(carriers) + WORD_JOINER + Array.from(packet, byteToVariationSelector).join("");
+  return pick(openings) + pick(endings) + WORD_JOINER + Array.from(packet, byteToVariationSelector).join("");
 }
 
 function decodeCompact(bytes: number[]) {

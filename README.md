@@ -2,8 +2,6 @@
 
 把普通文字变成一小句“啊这个……遥遥领先”的玄武语，还能随时恢复成原文。
 
-打开网页就能用，不用注册，不用登录，也不用安装任何东西。
-
 在线体验：[xuanwu-cipher.vercel.app](https://xuanwu-cipher.vercel.app)
 
 ## 看看效果

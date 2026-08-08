@@ -4,6 +4,8 @@
 
 打开网页就能用，不用注册，不用登录，也不用安装任何东西。
 
+在线体验：[xuanwu-cipher.vercel.app](https://xuanwu-cipher.vercel.app)
+
 ## 看看效果
 
 下面的例子把 `are you OK？` 变成了玄武语：
